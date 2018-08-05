@@ -1,0 +1,35 @@
+{% load static %}
+<html>
+    <head>
+        <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    </head>
+    <body>
+      <body class="bg--blue">
+        <div class="dw">
+          {% for switch in switches %}
+          <div class="dw-pnl dw-pnl--pls">
+            <div class="dw-pnl__cntnt tx--white bd--white bg--darkred tx--center">
+              <h3>Turn {{ switch.name }} {{ switch.type }}</h3>
+              <form action="" method="post">
+                  {% csrf_token %}
+                  {{ form }}
+                  <input type="submit" name={{ switch.name }} value="Change State">
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+
+          <div class="dw-pnl dw-pnl--pls">
+            <div class="dw-pnl__cntnt tx--white bd--white bg--darkred tx--center">
+              <h1>Coming Soon</h1>
+            </div>
+          </div>
+          <div class="dw-pnl dw-pnl--pls">
+            <div class="dw-pnl__cntnt tx--white bd--white bg--darkred tx--center">
+              <h1>Coming Soon</h1>
+            </div>
+          </div>
+        </div>
+      </body>
+    </body>
+</html>
