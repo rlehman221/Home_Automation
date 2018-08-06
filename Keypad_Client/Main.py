@@ -14,10 +14,10 @@ import socket
 kp = keypad()
 
 # Setup Device Specific variables
-LOCK_UID = "lock1"
-UID = "keypad1"
+LOCK_UID = "lock1#"
+UID = "keypad1#"
 s = socket.socket()
-host = '10.211.55.5'
+host = '204.48.22.79'
 port = 9996
 
 def digit():
@@ -29,8 +29,9 @@ def digit():
 
 def setup():
     # Connect to designated host and send device specific information
+    print("Waiting to connect")
     s.connect((host,port))
-    output_str = "keypad_code"
+    output_str = "keypad_device#"
     s.send(str.encode(output_str))
     time.sleep(1)
     s.send(str.encode(UID))

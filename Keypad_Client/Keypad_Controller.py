@@ -2,7 +2,7 @@
  # Date: June-10-2018
  # Created by: Ryan Lehman
 
- from MCP23008 import MCP23008
+from MCP23008 import MCP23008
  
 class keypad(MCP23008):
 

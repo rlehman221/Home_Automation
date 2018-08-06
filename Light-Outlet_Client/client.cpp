@@ -1,3 +1,12 @@
+/* client.cpp - TCP socket client that connect to a server side
+ * socket and waits for commands. Once a command is received, it 
+ * goes through a mapping stage to parse both the device in request
+ * along with the required action. The data is then transmitted using
+ * RF modules.
+ * 
+ * Date: June-15-2018
+ * Created by: Ryan Lehman
+*/
 
 #include <stdio.h>
 #include <sys/socket.h>
@@ -12,8 +21,6 @@
 #include "../rc-switch/RCSwitch.h"
 #include <unordered_map>
 
-
-#define PORT 9996
 using namespace std;
 int main(int argc, char const *argv[])
 {
@@ -21,17 +28,16 @@ int main(int argc, char const *argv[])
     struct sockaddr_in serv_addr;
     int result;
     char buffer[1024] = {0};
-    int count = 1;
+    int isValid = 1;
   
+	// Creates client socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("\n Socket creation error \n");
+        printf("Socket creation error \n");
         return -1;
     }
     
-  
     memset(&serv_addr, '0', sizeof(serv_addr));
-  
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
       
@@ -41,42 +47,41 @@ int main(int argc, char const *argv[])
         printf("\nInvalid address/ Address not supported \n");
         return -1;
     }
-    printf("About to connect \n");
   
+	// Connects to the server through TCP connection
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        printf("\nConnection Failed \n");
+        printf("Connection Failed \n");
         return -1;
     }
-    printf("Connected \n");
+	
+	// Sends a confirmation code to server showing its ID
     send(sock , CONFIRM , strlen(CONFIRM) , 0 );
-    printf("Confirm Sent \n");
-	//sockaddr_in client_addr = new_keypad.keypad_addr;
-	fd_set readset; // fd_set is a set of sockets
-	/* Call select() */
+    
+	fd_set readset; // Set of sockets
+
 	while (count) {
 		do {
-		FD_ZERO(&readset); // Clear an fd_set
-		FD_SET(sock, &readset); // Add a descriptor to an fd_set
+		FD_ZERO(&readset); // Clear set
+		FD_SET(sock, &readset);
 		result = select(sock + 1, &readset, NULL, NULL, NULL);
 		} while (result == -1 && errno == EINTR);
 		if (result > 0) {
 		   if (FD_ISSET(sock, &readset)) {
-			  /* The socket_fd has data available to be read */
+			  // Server has data available to be read
 			  result = recv(sock, buffer, 1024, 0);
 			  if (result == 0) {
-				 /* This means the other side closed the socket */
-				 printf("Socket Closed\n");
+				 // Server side closed the socket */
+				 printf("Socket Closed \n");
 				 close(sock);
-				 count = 0;
-			  }
-			  else {
+				 isValid = 0;
+			  } else {
+				// Toggle on/off outlet based on server command
 				toggle_switch(buffer);
 			  }
 		   }
 		}
 		else if (result < 0) {
-		   /* An error ocurred, just print it to stdout */
 		   printf("Error on select(): %s\"", strerror(errno));
 		}
 	}
@@ -87,14 +92,16 @@ void toggle_switch(char *buffer)
 {
 	char *pch;
 	int PIN = 0;
-	int protocol = 0; // A value of 0 will use rc-switch's default value
-    int pulseLength = 200;
+	int protocol = 0; // 0 default value
+    int pulseLength = 200; // Freq. to transmit
     int code;
     string Str;
 	
+	// Extract device type
 	pch = strtok(buffer,"+");
 	
 	if (pch != NULL) {
+		// Check to see if device requested is valid
 		auto iter = device_map.find(pch);
 	
 		if (iter == device_map.end())
@@ -102,11 +109,9 @@ void toggle_switch(char *buffer)
 			cout << "Could Not Find That Device" << endl;
 			
 		} else {
-			cout << iter->first << endl;
-			
-			
+			// If the device is found, check the command to execute
 			pch = strtok(NULL,"01");
-		
+			
 			if (strcmp("On",pch) == 0){
 				code =  iter->second[0];
 			} else {
@@ -114,15 +119,13 @@ void toggle_switch(char *buffer)
 			}
 		}
 	}
-    
 	
-
-    if (wiringPiSetup () == -1) printf("setup error\n");
-    printf("sending code[%i]\n", code);
+	// Transmit to device the servers command
+    if (wiringPiSetup () == -1) printf("setup error \n");
+    printf("sending code[%i] \n", code);
     RCSwitch mySwitch = RCSwitch();
     if (protocol != 0) mySwitch.setProtocol(protocol);
     if (pulseLength != 0) mySwitch.setPulseLength(pulseLength);
     mySwitch.enableTransmit(PIN);
-    
     mySwitch.send(code, 24);
 }
